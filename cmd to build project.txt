@@ -1,0 +1,1 @@
+pyinstaller --onefile --noconsole --windowed  --icon=Icon.ico view.py
