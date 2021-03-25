@@ -4,9 +4,9 @@ import main
 
 
 def get_movement_sound():
-    rnd = random.randint(1, 5)
+    rnd = random.randint(1, 4)
     sound = pygame.mixer.Sound(f'Sounds/{rnd}.mp3')
-    sound.set_volume(0.5)
+    sound.set_volume(0.25)
     return sound
 
 
@@ -20,8 +20,8 @@ def get_config_info(param, file_name="Config.ini"):
     return value
 
 
-RESOLUTION = get_config_info('RESOLUTION')
-FIELD_SIZE = get_config_info('FIELD_SIZE')
+RESOLUTION = get_config_info('RESOLUTION') if get_config_info('RESOLUTION') != 0 else 720
+FIELD_SIZE = get_config_info('FIELD_SIZE') if get_config_info('FIELD_SIZE') != 0 else 8
 CIRCLE_WIDTH = 3
 FPS = 30
 
