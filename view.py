@@ -66,7 +66,7 @@ def test():
     field.field = new_field
     player1.get_checkers()
     player2.get_checkers()
-test()
+# test()
 
 
 # Game Loop
