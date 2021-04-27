@@ -123,6 +123,7 @@ class Player:
     def get_checkers(self):
         self.checkers = []
         self.there_are_attack_options = False
+        there_are_options_to_do = False
         for i in range(0, self.field.size):
             for j in range(0, self.field.size):
                 is_king = False
@@ -134,6 +135,10 @@ class Player:
                     tmp_checker = Checker(self.field, i, j, self.white, is_king)
                     if tmp_checker.valid_attacks:
                         self.there_are_attack_options = True
+                        there_are_options_to_do = True
+                    if tmp_checker.valid_steps:
+                        there_are_options_to_do = True
+        return there_are_options_to_do
 
     # Choose checker from th field
     def choose_checker(self, x, y):

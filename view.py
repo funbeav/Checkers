@@ -66,16 +66,18 @@ def test():
     field.field = new_field
     player1.get_checkers()
     player2.get_checkers()
-# test()
+test()
 
 
 # Game Loop
 running = True
-new_game_flag = False
-quit_flag = False
-next_turn_flag = False
-menu_alpha = alpha = 255
-new_game_color = quit_color = WHITE
+new_game_flag = quit_flag = next_turn_flag = end_game_flag = False
+menu_alpha_max, rect_alpha_max = (255, 40)
+rect_alpha = rect_alpha_max
+menu_alpha = menu_alpha_max
+alpha_step_fast = 20
+alpha_step_slow = 5
+new_game_color = quit_color = end_game_color = WHITE
 while running:
     # Holding loop on correct speed
     clock.tick(FPS)
@@ -92,34 +94,13 @@ while running:
             pygame.draw.rect(screen, current_cell, [i, j, i + RESOLUTION // FIELD_SIZE, j + RESOLUTION // FIELD_SIZE])
 
     # Draw the border
-    border_coord = ((0, 0), (RESOLUTION - CIRCLE_WIDTH, 0),
-                    (RESOLUTION - CIRCLE_WIDTH, RESOLUTION - CIRCLE_WIDTH), (0, RESOLUTION - CIRCLE_WIDTH))
+    border_coord = ((0, 0), (RESOLUTION, 0),
+                    (RESOLUTION, RESOLUTION), (0, RESOLUTION))
     border_thickness = CIRCLE_WIDTH * 2
-    pygame.draw.lines(screen, WHITE if current_player.white else BLACK, True, border_coord, border_thickness)
-
-    # Menu Outdraw:
-    # New Game Button
-    new_game_text = MAIN_FONT.render('New Game', True, new_game_color)
-    new_game_button = new_game_text.get_rect(
-        center=(RESOLUTION // 2, RESOLUTION // 2 - (RESOLUTION // FIELD_SIZE // 2)))
-    # Quit Button
-    quit_text = MAIN_FONT.render('Quit', True, quit_color)
-    quit_button = quit_text.get_rect(center=(RESOLUTION // 2, RESOLUTION // 2 + (RESOLUTION // FIELD_SIZE // 2)))
-
-    # Menu is active
-    if not new_game_flag and not quit_flag:
-        screen.blit(new_game_text, new_game_button)
-        screen.blit(quit_text, quit_button)
-
-        # Selected option
-        x, y = pygame.mouse.get_pos()
-        if new_game_button.collidepoint(x, y):
-            new_game_text = MAIN_FONT.render('New Game', True, BLACK)
-        if quit_button.collidepoint(x, y):
-            quit_text = MAIN_FONT.render('Quit', True, BLACK)
-
-        screen.blit(new_game_text, new_game_button)
-        screen.blit(quit_text, quit_button)
+    border_color = WHITE if current_player.white else BLACK
+    if end_game_flag:
+        border_color = WHITE if not current_player.white else BLACK
+    pygame.draw.lines(screen, border_color, True, border_coord, border_thickness)
 
     # New Game Process
     if new_game_flag:
@@ -148,15 +129,74 @@ while running:
             pygame.draw.circle(screen, BLACK if current_player == player1 else WHITE,
                                (pos_y, pos_x), RESOLUTION // (FIELD_SIZE / 0.4), CIRCLE_WIDTH)
 
+    # Draw transparent Rect
+    transparent_black = BLACK + (rect_alpha,)
+    rect_coord = [0, 0, RESOLUTION, RESOLUTION]
+    shape_surf = pygame.Surface(pygame.Rect(rect_coord).size, pygame.SRCALPHA)
+    pygame.draw.rect(shape_surf, transparent_black, shape_surf.get_rect())
+
+    # Game is finished
+    if end_game_flag:
+        if current_player.white:
+            winner_text, end_game_color = ('Black', BLACK)
+        else:
+            winner_text, end_game_color = ('White', WHITE)
+
+        # show transparent rectangle
+        if rect_alpha < rect_alpha_max:
+            rect_alpha += alpha_step_slow
+        screen.blit(shape_surf, rect_coord)
+
+        # winner's label
+        x, y = pygame.mouse.get_pos()
+        end_game_text = MAIN_FONT.render(f'{winner_text} wins!', True, end_game_color)
+        end_game_button = end_game_text.get_rect(center=(RESOLUTION // 2, RESOLUTION // 2))
+        if end_game_button.collidepoint(x, y):
+            end_game_text = MAIN_FONT.render(f'{winner_text} wins!', True, WHITE if end_game_color == BLACK else BLACK)
+
+        if menu_alpha < menu_alpha_max:
+            menu_alpha += alpha_step_fast
+        end_game_text.set_alpha(menu_alpha)
+        screen.blit(end_game_text, end_game_button)
+
+    # Menu Outdraw:
+    # New Game Button
+    new_game_text = MAIN_FONT.render('New Game', True, new_game_color)
+    new_game_button = new_game_text.get_rect(
+        center=(RESOLUTION // 2, RESOLUTION // 2 - (RESOLUTION // FIELD_SIZE // 2)))
+    # Quit Button
+    quit_text = MAIN_FONT.render('Quit', True, quit_color)
+    quit_button = quit_text.get_rect(center=(RESOLUTION // 2, RESOLUTION // 2 + (RESOLUTION // FIELD_SIZE // 2)))
+
+    # Menu is active
+    if not new_game_flag and not quit_flag:
+        # Selected option
+        x, y = pygame.mouse.get_pos()
+        if new_game_button.collidepoint(x, y):
+            new_game_text = MAIN_FONT.render('New Game', True, BLACK)
+        if quit_button.collidepoint(x, y):
+            quit_text = MAIN_FONT.render('Quit', True, BLACK)
+
+        # draw transparent rectangle
+        screen.blit(shape_surf, rect_coord)
+        # draw options
+        screen.blit(new_game_text, new_game_button)
+        screen.blit(quit_text, quit_button)
+
     # Menu fading away
-    if new_game_flag or quit_flag:
-        if menu_alpha > 0:
-            menu_alpha -= 10
+    if (new_game_flag or quit_flag) and not end_game_flag:
+        if menu_alpha > alpha_step_fast:
             new_game_text.set_alpha(menu_alpha)
             quit_text.set_alpha(menu_alpha)
             screen.blit(new_game_text, new_game_button)
             screen.blit(quit_text, quit_button)
-    if quit_flag and menu_alpha < 0:
+            menu_alpha -= alpha_step_fast
+        if new_game_flag and rect_alpha > alpha_step_slow and not end_game_flag:
+            screen.blit(shape_surf, rect_coord)
+            rect_alpha -= alpha_step_slow
+        if quit_flag:
+            screen.blit(shape_surf, rect_coord)
+    if quit_flag and menu_alpha < alpha_step_fast + 1:
         running = False
 
     # Event input
@@ -166,21 +206,32 @@ while running:
             running = False
 
         # check if left mouse button is pressed
-        clicked_color = ()
         if event.type == pygame.MOUSEBUTTONDOWN:
-
             # Menu
-            if not new_game_flag:
+            if not new_game_flag and not quit_flag:
+                # clicked new game
                 if new_game_button.collidepoint(event.pos):
+                    get_movement_sound().play()
                     new_game_flag = True
                     new_game_color = BLACK
+                # clicked quit
                 if quit_button.collidepoint(event.pos):
+                    get_movement_sound().play()
                     quit_flag = True
                     quit_color = BLACK
-                    if menu_alpha < 0:
+                    if menu_alpha < alpha_step_fast + 1:
                         running = False
+            if end_game_flag:
+                if end_game_button.collidepoint(event.pos):
+                    get_movement_sound().play()
+                    end_game_flag = new_game_flag = quit_flag = False
+                    new_game_color = quit_color = WHITE
+                    menu_alpha = menu_alpha_max
 
-            clicked_color = screen.get_at(pygame.mouse.get_pos())
+                    field = main.Field(FIELD_SIZE)
+                    player1 = main.Player(field, white=True)
+                    player2 = main.Player(field, white=False)
+                    current_player = player1
 
             clicked_x = int(pygame.mouse.get_pos()[1] / RESOLUTION * FIELD_SIZE)
             clicked_y = int(pygame.mouse.get_pos()[0] / RESOLUTION * FIELD_SIZE)
@@ -195,6 +246,9 @@ while running:
                         current_player = player2 if current_player == player1 else player1
                         get_movement_sound().play()
                         next_turn_flag = True
+                        # if there is no options to move
+                        if not current_player.get_checkers():
+                            end_game_flag = True
                     # Not finished turn
                     if current_player.chosen_checker:
                         if current_player.chosen_checker.x == clicked_x and \
