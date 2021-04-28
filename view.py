@@ -135,40 +135,24 @@ while running:
     shape_surf = pygame.Surface(pygame.Rect(rect_coord).size, pygame.SRCALPHA)
     pygame.draw.rect(shape_surf, transparent_black, shape_surf.get_rect())
 
-    # Game is finished
-    if end_game_flag:
-        if current_player.white:
-            winner_text, end_game_color = ('Black', BLACK)
-        else:
-            winner_text, end_game_color = ('White', WHITE)
-
-        # show transparent rectangle
-        if rect_alpha < rect_alpha_max:
-            rect_alpha += alpha_step_slow
-        screen.blit(shape_surf, rect_coord)
-
-        # winner's label
-        x, y = pygame.mouse.get_pos()
-        end_game_text = MAIN_FONT.render(f'{winner_text} wins!', True, end_game_color)
-        end_game_button = end_game_text.get_rect(center=(RESOLUTION // 2, RESOLUTION // 2))
-        if end_game_button.collidepoint(x, y):
-            end_game_text = MAIN_FONT.render(f'{winner_text} wins!', True, WHITE if end_game_color == BLACK else BLACK)
-
-        if menu_alpha < menu_alpha_max:
-            menu_alpha += alpha_step_fast
-        end_game_text.set_alpha(menu_alpha)
-        screen.blit(end_game_text, end_game_button)
-
-    # Menu Outdraw:
-    # New Game Button
+    # New Game Button Description
     new_game_text = MAIN_FONT.render('New Game', True, new_game_color)
     new_game_button = new_game_text.get_rect(
         center=(RESOLUTION // 2, RESOLUTION // 2 - (RESOLUTION // FIELD_SIZE // 2)))
-    # Quit Button
+
+    # Quit Button Description
     quit_text = MAIN_FONT.render('Quit', True, quit_color)
     quit_button = quit_text.get_rect(center=(RESOLUTION // 2, RESOLUTION // 2 + (RESOLUTION // FIELD_SIZE // 2)))
 
-    # Menu is active
+    # End game Button Description
+    if current_player.white:
+        winner_text, end_game_color = ('Black', BLACK)
+    else:
+        winner_text, end_game_color = ('White', WHITE)
+    end_game_text = MAIN_FONT.render(f'{winner_text} wins!', True, end_game_color)
+    end_game_button = end_game_text.get_rect(center=(RESOLUTION // 2, RESOLUTION // 2))
+
+    # If menu is active
     if not new_game_flag and not quit_flag:
         # Selected option
         x, y = pygame.mouse.get_pos()
@@ -177,25 +161,52 @@ while running:
         if quit_button.collidepoint(x, y):
             quit_text = MAIN_FONT.render('Quit', True, BLACK)
 
-        # draw transparent rectangle
+        # Draw transparent rectangle
         screen.blit(shape_surf, rect_coord)
-        # draw options
+        # Draw options
         screen.blit(new_game_text, new_game_button)
         screen.blit(quit_text, quit_button)
 
-    # Menu fading away
+    # If there is no any steps available (Game is finished)
+    if end_game_flag:
+        # Slowly show transparent rectangle
+        if rect_alpha < rect_alpha_max:
+            rect_alpha += alpha_step_slow
+        screen.blit(shape_surf, rect_coord)
+
+        # Define winner's label
+        x, y = pygame.mouse.get_pos()
+        end_game_text = MAIN_FONT.render(f'{winner_text} wins!', True, end_game_color)
+        end_game_button = end_game_text.get_rect(center=(RESOLUTION // 2, RESOLUTION // 2))
+        if end_game_button.collidepoint(x, y):
+            end_game_text = MAIN_FONT.render(f'{winner_text} wins!', True,
+                                             WHITE if end_game_color == BLACK else BLACK)
+
+        # Slowly fade back menu
+        if menu_alpha < menu_alpha_max:
+            menu_alpha += alpha_step_fast
+        end_game_text.set_alpha(menu_alpha)
+        screen.blit(end_game_text, end_game_button)
+
+    # Labels fading away (if clicked new_game or quit and not game_ended)
     if (new_game_flag or quit_flag) and not end_game_flag:
+        # Menu options are fading away
         if menu_alpha > alpha_step_fast:
+            # set new alpha level
             new_game_text.set_alpha(menu_alpha)
             quit_text.set_alpha(menu_alpha)
+            # draw menu labels
             screen.blit(new_game_text, new_game_button)
             screen.blit(quit_text, quit_button)
             menu_alpha -= alpha_step_fast
-        if new_game_flag and rect_alpha > alpha_step_slow and not end_game_flag:
+        # Transparent rectangle is fading away
+        if new_game_flag and rect_alpha > alpha_step_slow:
             screen.blit(shape_surf, rect_coord)
             rect_alpha -= alpha_step_slow
+        # Do not fade away transparent rectangle, if quit
         if quit_flag:
             screen.blit(shape_surf, rect_coord)
+    # When menu options faded away (menu_alpha ~= 0), close Application
     if quit_flag and menu_alpha < alpha_step_fast + 1:
         running = False
 
